@@ -9,11 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { validateSignupForm } from '../utils/ValidationUtils';
 import { useTranslation } from '../hooks/useTranslation';
 import StorageService from '../services/StorageService';
+import images from '../constants/images';
 
 const SignupScreen = ({ navigation }) => {
   const { signup } = useAuth();
@@ -29,7 +31,10 @@ const SignupScreen = ({ navigation }) => {
     setErrors({});
 
     const currentLang = StorageService.getItem('app_language') || language;
-    const validation = validateSignupForm({ name, email, password }, currentLang);
+    const validation = validateSignupForm(
+      { name, email, password },
+      currentLang,
+    );
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
@@ -48,7 +53,7 @@ const SignupScreen = ({ navigation }) => {
     }
   };
 
-  const clearError = (field) => {
+  const clearError = field => {
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
@@ -66,7 +71,7 @@ const SignupScreen = ({ navigation }) => {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logo}>✨</Text>
+            <Image source={images.logo} style={styles.logo} />
           </View>
           <Text style={styles.title}>{t.signup.title}</Text>
           <Text style={styles.subtitle}>{t.signup.subtitle}</Text>
@@ -82,14 +87,19 @@ const SignupScreen = ({ navigation }) => {
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>{t.signup.nameLabel}</Text>
-            <View style={[styles.inputWrapper, errors.name && styles.inputWrapperError]}>
-              <Text style={styles.inputIcon}>👤</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.name && styles.inputWrapperError,
+              ]}
+            >
+              <Image source={images.name} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder={t.signup.namePlaceholder}
                 placeholderTextColor="#9CA3AF"
                 value={name}
-                onChangeText={(text) => {
+                onChangeText={text => {
                   setName(text);
                   clearError('name');
                 }}
@@ -98,19 +108,26 @@ const SignupScreen = ({ navigation }) => {
                 editable={!isLoading}
               />
             </View>
-            {errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
+            {errors.name && (
+              <Text style={styles.fieldError}>{errors.name}</Text>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>{t.signup.emailLabel}</Text>
-            <View style={[styles.inputWrapper, errors.email && styles.inputWrapperError]}>
-              <Text style={styles.inputIcon}>📧</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.email && styles.inputWrapperError,
+              ]}
+            >
+              <Image source={images.email} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder={t.signup.emailPlaceholder}
                 placeholderTextColor="#9CA3AF"
                 value={email}
-                onChangeText={(text) => {
+                onChangeText={text => {
                   setEmail(text);
                   clearError('email');
                 }}
@@ -120,19 +137,26 @@ const SignupScreen = ({ navigation }) => {
                 editable={!isLoading}
               />
             </View>
-            {errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
+            {errors.email && (
+              <Text style={styles.fieldError}>{errors.email}</Text>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>{t.signup.passwordLabel}</Text>
-            <View style={[styles.inputWrapper, errors.password && styles.inputWrapperError]}>
-              <Text style={styles.inputIcon}>🔒</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.password && styles.inputWrapperError,
+              ]}
+            >
+              <Image source={images.password} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, styles.passwordInput]}
                 placeholder={t.signup.passwordPlaceholder}
                 placeholderTextColor="#9CA3AF"
                 value={password}
-                onChangeText={(text) => {
+                onChangeText={text => {
                   setPassword(text);
                   clearError('password');
                 }}
@@ -146,10 +170,12 @@ const SignupScreen = ({ navigation }) => {
                 onPress={() => setPasswordVisible(!passwordVisible)}
                 disabled={isLoading}
               >
-                <Text style={styles.eyeIconText}>{passwordVisible ? '👁️' : '👁️‍🗨️'}</Text>
+                <Image source={passwordVisible ? images.show : images.hide} style={styles.eyeIconImage} />
               </TouchableOpacity>
             </View>
-            {errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
+            {errors.password && (
+              <Text style={styles.fieldError}>{errors.password}</Text>
+            )}
           </View>
 
           <TouchableOpacity
@@ -178,7 +204,8 @@ const SignupScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <Text style={styles.linkText}>
-              {t.signup.linkText} <Text style={styles.linkTextBold}>{t.signup.linkBold}</Text>
+              {t.signup.linkText}{' '}
+              <Text style={styles.linkTextBold}>{t.signup.linkBold}</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -205,18 +232,20 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#10B981',
+    backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#10B981',
+    shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
   },
   logo: {
-    fontSize: 40,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   title: {
     fontSize: 32,
@@ -252,19 +281,16 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    gap: 6,
   },
   inputWrapperError: {
     borderColor: '#EF4444',
     borderWidth: 2,
   },
   inputIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    width: 20,
+    height: 20,
+    tintColor: '#9CA3AF',
   },
   input: {
     flex: 1,
@@ -310,17 +336,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   button: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#6366F1',
     borderRadius: 12,
-    padding: 18,
+    padding: 14,
     alignItems: 'center',
     marginTop: 8,
     marginBottom: 24,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  },
+  eyeIconImage: {
+    width: 20,
+    height: 20,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -356,7 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   linkTextBold: {
-    color: '#10B981',
+    color: '#6366F1',
     fontWeight: '600',
   },
 });

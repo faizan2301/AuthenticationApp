@@ -26,27 +26,67 @@ const AppNavigator = () => {
     return () => clearTimeout(timer);
   }, [isLoading, showSplash]);
 
+  const defaultScreenOptions = {
+    headerShown: false,
+    gestureEnabled: true,
+    gestureDirection: 'horizontal',
+    fullScreenGestureEnabled: true,
+    animation: 'slide_from_right',
+    animationDuration: 300,
+    contentStyle: {
+      backgroundColor: '#F8FAFC',
+    },
+  };
+
   if (showSplash || isLoading) {
     return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{
+          ...defaultScreenOptions,
+          animation: 'fade',
+          animationDuration: 500,
+          gestureEnabled: false,
+        }}
+      >
         <Stack.Screen name="Splash" component={SplashScreen} />
       </Stack.Navigator>
     );
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-      }}
-    >
+    <Stack.Navigator screenOptions={defaultScreenOptions}>
       {isAuthenticated ? (
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            animation: 'fade_from_bottom',
+            animationDuration: 400,
+            gestureEnabled: false,
+          }}
+        />
       ) : (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{
+              animation: 'fade',
+              animationDuration: 300,
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="Signup"
+            component={SignupScreen}
+            options={{
+              animation: 'slide_from_right',
+              animationDuration: 350,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              fullScreenGestureEnabled: true,
+            }}
+          />
         </>
       )}
     </Stack.Navigator>
