@@ -3,7 +3,7 @@ import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../constants/StorageKeys';
 import { validateLoginForm, validateSignupForm } from '../utils/ValidationUtils';
 import { translations } from '../constants/Translations';
-import { useLanguage } from './LanguageContext';
+import ApiService from '../services/ApiService';
 
 const AuthContext = createContext(null);
 
@@ -14,9 +14,27 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
+        const storedToken = StorageService.getItem(STORAGE_KEYS.AUTH_TOKEN);
         const storedUser = StorageService.getItem(STORAGE_KEYS.USER);
-        if (storedUser) {
+        
+        if (storedToken && storedUser) {
           setUser(storedUser);
+        } else if (storedToken) {
+          const profileResult = await ApiService.getUserProfile(storedToken);
+          if (profileResult.success && profileResult.data) {
+            const userData = {
+              id: profileResult.data.id,
+              name: profileResult.data.name,
+              email: profileResult.data.email,
+              avatar: profileResult.data.avatar,
+              role: profileResult.data.role,
+            };
+            StorageService.setItem(STORAGE_KEYS.USER, userData);
+            setUser(userData);
+          } else {
+            StorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+            StorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+          }
         }
       } catch (error) {
         console.error('Error loading user:', error);
@@ -38,30 +56,46 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: firstError };
       }
 
-      const storedUsers = StorageService.getItem('users') || [];
+      const result = await ApiService.login(email.trim(), password);
 
-      const foundUser = storedUsers.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase().trim()
-      );
-
-      if (!foundUser) {
-        return { success: false, error: t.validation.incorrectCredentials };
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || t.validation.incorrectCredentials,
+        };
       }
 
-      if (foundUser.password !== password) {
-        return { success: false, error: t.validation.incorrectCredentials };
+      const responseData = result.data;
+      const accessToken = responseData.access_token;
+      const refreshToken = responseData.refresh_token;
+
+      if (!accessToken) {
+        return {
+          success: false,
+          error: t.validation.loginError || 'Invalid response from server',
+        };
       }
 
-      const userData = {
-        id: foundUser.id,
-        name: foundUser.name,
-        email: foundUser.email,
-      };
+      StorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+      if (refreshToken) {
+        StorageService.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      }
 
-      setUser(userData);
-      StorageService.setItem(STORAGE_KEYS.USER, userData);
-
-      return { success: true };
+      const profileResult = await ApiService.getUserProfile(accessToken);
+      if (profileResult.success && profileResult.data) {
+        const userData = {
+          id: profileResult.data.id,
+          name: profileResult.data.name,
+          email: profileResult.data.email,
+          avatar: profileResult.data.avatar,
+          role: profileResult.data.role,
+        };
+        StorageService.setItem(STORAGE_KEYS.USER, userData);
+        setUser(userData);
+        return { success: true };
+      } else {
+        return { success: true };
+      }
     } catch (error) {
       console.error('Login error:', error);
       const currentLang = StorageService.getItem('app_language') || 'en';
@@ -80,34 +114,38 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: firstError };
       }
 
-      const storedUsers = StorageService.getItem('users') || [];
+      const result = await ApiService.signup(name.trim(), email.trim(), password);
 
-      const existingUser = storedUsers.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase().trim()
-      );
-
-      if (existingUser) {
-        return { success: false, error: t.validation.userExists };
+      if (!result.success) {
+        const errorMessage =
+          result.error || t.validation.userExists || t.validation.signupError;
+        return { success: false, error: errorMessage };
       }
 
-      const newUser = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        email: email.toLowerCase().trim(),
-        password: password,
-      };
-
-      storedUsers.push(newUser);
-      StorageService.setItem('users', storedUsers);
-
+      const responseData = result.data;
       const userData = {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
+        id: responseData.id,
+        name: responseData.name || name.trim(),
+        email: responseData.email || email.trim(),
+        avatar: responseData.avatar,
+        role: responseData.role || 'customer',
       };
 
-      setUser(userData);
+      const loginResult = await ApiService.login(email.trim(), password);
+      if (loginResult.success && loginResult.data) {
+        const accessToken = loginResult.data.access_token;
+        const refreshToken = loginResult.data.refresh_token;
+
+        if (accessToken) {
+          StorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+          if (refreshToken) {
+            StorageService.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+          }
+        }
+      }
+
       StorageService.setItem(STORAGE_KEYS.USER, userData);
+      setUser(userData);
 
       return { success: true };
     } catch (error) {
@@ -122,6 +160,8 @@ export const AuthProvider = ({ children }) => {
     try {
       setUser(null);
       StorageService.removeItem(STORAGE_KEYS.USER);
+      StorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      StorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     } catch (error) {
       console.error('Logout error:', error);
     }
